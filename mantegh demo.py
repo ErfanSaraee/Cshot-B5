@@ -2,7 +2,7 @@ import pygame
 import random
 import time
 import math
-
+from abc import ABC, abstractmethod
 
 pygame.init()
 
@@ -26,71 +26,142 @@ hit_sound = pygame.mixer.Sound("headshot.mp3")
 blood_image = pygame.image.load("blood.png")
 blood_image = pygame.transform.scale(blood_image, (30, 30))
 
-class Aim:
+
+class Drawable(ABC):
+
+    @abstractmethod
+    def draw(self):
+        pass
+
+
+class Aim(Drawable):
     def __init__(self, controls, bullet_color):
-        self.x = random.randint(100, WIDTH - 100)
-        self.y = random.randint(100, HEIGHT - 100)
-        self.color = WHITE
-        self.bullets = 20
-        self.score = 0
-        self.controls = controls
-        self.bullet_color = bullet_color
-        self.time_left = 60
-        self.last_shot_time = time.time()
-        self.can_shoot = True
+        self._x = random.randint(100, WIDTH - 100)
+        self._y = random.randint(100, HEIGHT - 100)
+        self._color = WHITE
+        self._bullets = 15
+        self._score = 0
+        self._controls = controls
+        self._bullet_color = bullet_color
+        self._time_left = 60
+        self._last_shot_time = time.time()
+
+    @property
+    def x(self):
+        return self._x
+
+    @property
+    def y(self):
+        return self._y
+
+    @property
+    def color(self):
+        return self._color
+
+    @property
+    def bullets(self):
+        return self._bullets
+
+    @bullets.setter
+    def bullets(self, value):
+        self._bullets = max(0, value)
+
+    @property
+    def score(self):
+        return self._score
+
+    @score.setter
+    def score(self, value):
+        self._score = max(0, value)
+
+    @property
+    def time_left(self):
+        return self._time_left
+
+    @time_left.setter
+    def time_left(self, value):
+        self._time_left = max(0, value)
 
     def move(self, keys):
-        if keys[self.controls["left"]]: self.x = max(0, self.x - 5)
-        if keys[self.controls["right"]]: self.x = min(WIDTH, self.x + 5)
-        if keys[self.controls["up"]]: self.y = max(0, self.y - 5)
-        if keys[self.controls["down"]]: self.y = min(HEIGHT, self.y + 5)
+        if keys[self._controls["left"]]: self._x = max(0, self._x - 5)
+        if keys[self._controls["right"]]: self._x = min(WIDTH, self._x + 5)
+        if keys[self._controls["up"]]: self._y = max(0, self._y - 5)
+        if keys[self._controls["down"]]: self._y = min(HEIGHT, self._y + 5)
 
     def shoot(self):
         current_time = time.time()
-        if self.bullets > 0 and current_time - self.last_shot_time >= 0.5 and self.time_left > 0:
-            self.bullets -= 1
-            bullets.append(Bullet(self.x, self.y, self.bullet_color))
-            self.last_shot_time = current_time
+        if self._bullets > 0 and current_time - self._last_shot_time >= 0.5 and self._time_left > 0:
+            self._bullets -= 1
+            bullets.append(Bullet(self._x, self._y, self._bullet_color))
+            self._last_shot_time = current_time
             shoot_sound.play()
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 8)
+        pygame.draw.circle(screen, self._color, (self._x, self._y), 5)
 
     def update_time(self):
-        if self.time_left > 0:
-            self.time_left -= 1 / 30
+        if self._time_left > 0:
+            self._time_left -= 1 / 30
 
-class Bullet:
+    @property
+    def controls(self):
+        return self._controls
+
+
+
+class Bullet(Drawable):
+
     def __init__(self, x, y, color):
-        self.x = x
-        self.y = y
-        self.color = color
+        self._x = x
+        self._y = y
+        self._color = color
+
+    @property
+    def x(self):
+        return self._x
+
+    @property
+    def y(self):
+        return self._y
+
+    @property
+    def color(self):
+        return self._color
 
     def draw(self):
-        pygame.draw.circle(screen, self.color, (self.x, self.y), 5)
+        pygame.draw.circle(screen, self._color, (self._x, self._y), 5)
 
-class Target:
+
+
+class Target(Drawable):
     def __init__(self):
-        self.x = random.randint(100, WIDTH - 100)
-        self.y = random.randint(100, HEIGHT - 100)
+        self._x = random.randint(0, WIDTH - 30)
+        self._y = random.randint(100, HEIGHT - 30)
+        self._hit_time = None
         try:
-            self.image = pygame.image.load("redtarget.png")
-            self.image = pygame.transform.scale(self.image, (30, 30))
+            self._image = pygame.image.load("redtarget.png")
+            self._image = pygame.transform.scale(self._image, (30, 30))
         except pygame.error:
-            self.image = None
-        self.hit_time = None
+            self._image = None
+
+    @property
+    def x(self):
+        return self._x
+
+    @property
+    def y(self):
+        return self._y
 
     def draw(self):
-        if self.image:
-            screen.blit(self.image, (self.x, self.y))
-    
-        if self.hit_time:
+        if self._image:
+            screen.blit(self._image, (self._x, self._y))
+        if self._hit_time:
             current_time = pygame.time.get_ticks()
-            if current_time - self.hit_time <= 2000:
-                screen.blit(blood_image, (self.x - 10, self.y - 10))
+            if current_time - self._hit_time <= 2000:
+                screen.blit(blood_image, (self._x - 10, self._y - 10))
+
     def hit_target(self):
-        self.hit_time = pygame.time.get_ticks()
-        
+        self._hit_time = pygame.time.get_ticks()
 
 
 player1 = Aim({"left": pygame.K_a, "right": pygame.K_d, "up": pygame.K_w, "down": pygame.K_s, "shoot": pygame.K_SPACE}, CYAN)
@@ -199,14 +270,14 @@ while running:
     screen.blit(time_text1, (20, 50))
 
     time_text2 = pygame.font.Font(None, 30).render(
-        f"Player 2 Time: {int(player2.time_left)}", True, BLACK
+        f"| Player 2 Time: {int(player2.time_left)}", True, BLACK
     )
-    screen.blit(time_text2, (WIDTH - 480, 50))
+    screen.blit(time_text2, (WIDTH - 493, 50))
 
     player1.update_time()
     player2.update_time()
 
-    pygame.display.flip()
+    pygame.display.update()
     clock.tick(30)
 
     for event in pygame.event.get():
